@@ -11,8 +11,6 @@ router = APIRouter(
     tags=["chat"],
     responses={404: {"description": "Not found"}},
 )
-
-# Global sessions storage (in production, you'd use Redis or similar)
 sessions = {}
 
 @router.post("/", response_model=ChatResponse)
