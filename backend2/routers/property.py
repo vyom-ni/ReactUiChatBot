@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
+import requests
 import logging
 from models.property import PropertyDetailsRequest, PropertyDetailsResponse, PropertyDeitail
 from services.chatbot import EnhancedPropertyChatbot
@@ -50,14 +51,13 @@ async def get_properties():
         "count": len(properties_with_coords)
     }
 
-@router.get('/nearby')
+@router.post('/nearby')
 async def find_nearby(request: PropertyDeitail):
     """Find nearby places for a property"""
     try:
-        data = request.get_json()
-        property_name = data.get('property_name', '')
-        place_type = data.get('place_type', 'school')
-        
+        property_name = request.property_name
+        place_type = request.place_type
+
         # Find the property
         target_property = None
         for prop in chatbot.properties_data:
@@ -82,7 +82,8 @@ async def find_nearby(request: PropertyDeitail):
         
         # Find nearby places
         nearby_result = chatbot.find_nearby_places(lat, lng, place_type)
-
+        
+        logger.info(f"Found {len(nearby_result)} nearby places for {property_name} ({place_type})")
         return {
             "property": {
                 "name": target_property.get('Building Name'),

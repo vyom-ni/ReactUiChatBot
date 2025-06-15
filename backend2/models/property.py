@@ -8,4 +8,4 @@ class PropertyDetailsResponse(BaseModel):
 
 class PropertyDeitail(BaseModel):
     property_name: str
-    place_type: str 
+    place_type: str

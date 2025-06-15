@@ -12,7 +12,7 @@ const EnhancedPropertyChatbot = () => {
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [lastMentionedProperty, setLastMentionedProperty] = useState(null); // Track last property discussed
-  const [sessionID, setSessionID] = useState(null);
+  // const [sessionID, setSessionID] = useState(null);
   const messagesEndRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -100,7 +100,8 @@ What kind of property are you looking for? 😊`,
       const response = await fetch('http://localhost:8001/chat/create_session');
       if (response.ok) {
         const data = await response.json();
-        setSessionID(data.session_id);
+        // setSessionID(data.session_id);
+        localStorage.setItem("session_id", data.session_id);
         console.log('New session created:', data);
         return data.session_id;
       } else {
@@ -202,7 +203,8 @@ What kind of property are you looking for? 😊`,
 
       window.findNearbyPlaces = (propertyName, type) => {
         setInputValue(`Find ${type}s near ${propertyName}`);
-        setTimeout(() => sendMessage(`Find ${type}s near ${propertyName}`), 100);
+        // setTimeout(() => sendMessage(`Find ${type}s near ${propertyName}`), 100);
+        findNearbyPlaces(propertyName, type);
       };
 
     } catch (error) {
@@ -234,6 +236,9 @@ What kind of property are you looking for? 😊`,
     }
 
     try {
+      const sessionID = localStorage.getItem("session_id");
+      console.log('Querying server with message:', message, 'Session ID:', sessionID);
+
       const response = await fetch('http://localhost:8001/chat', {
         method: 'POST',
         headers: {
@@ -279,7 +284,7 @@ What kind of property are you looking for? 😊`,
 
   const clearChat = async () => {
     try {
-      const currentSessionId = sessionID || null;
+      const currentSessionId = localStorage.getItem("session_id");
       const response = await fetch(`http://localhost:8001/chat/session/${currentSessionId}`, {
         method: 'DELETE',
       });
@@ -307,21 +312,39 @@ What kind of property are you looking for? 😊`,
 
   const findNearbyPlaces = async (propertyName, placeType) => {
     try {
+      const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: `Find nearby ${placeType}s for ${propertyName}`,
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setIsLoading(true);
       // Set the property as last mentioned for context
       setLastMentionedProperty(propertyName);
+
+      console.log(`Finding nearby ${placeType}s for property: ${propertyName}`);
       
       const response = await fetch('http://localhost:8001/properties/nearby', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          property_name: propertyName,
-          place_type: placeType
-        })
-      });
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        property_name: propertyName,
+        place_type: placeType
+      })
+    });
 
-      const data = await response.json();
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch nearby places');
+    }
+
+    const data = await response.json();;
+      console.log('Nearby places response:', data);
       
       if (data.nearby && data.nearby.places) {
         const limitedPlaces = data.nearby.places.slice(0, 3); // Limit to 3 places
@@ -339,6 +362,7 @@ What kind of property are you looking for? 😊`,
         
         setMessages(prev => [...prev, nearbyMessage]);
         setNearbyPlaces(limitedPlaces);
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error finding nearby places:', error);

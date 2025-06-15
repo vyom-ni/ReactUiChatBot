@@ -9,8 +9,10 @@ from services.preference_extractor import PreferenceExtractor
 from services.response_generator import ResponseGenerator
 from utils import get_prompt, get_greeting
 import logging
-from config import GEMINI_API_KEY
+from config import GEMINI_API_KEY, GOOGLE_MAPS_API_KEY
 from logging import Logger as logger
+import requests
+
 class EnhancedPropertyChatbot:
     def __init__(self, properties_file="apartments.json"):
         self.logger = logging.getLogger(__name__)  
@@ -165,6 +167,66 @@ class EnhancedPropertyChatbot:
             "user_preferences": self.conversation_context.get("user_preferences", {}),
             "properties_in_database": len(self.properties_data)
         }
+    
+    def find_nearby_places(self, lat, lng, place_type="school", radius=2000):
+        """Find nearby places using Google Places API"""
+        google_api_key = GOOGLE_MAPS_API_KEY
+        if not google_api_key:
+            return {"error": "Google Maps API key not configured"}
+        
+        # Map common requests to Google Places types
+        type_mapping = {
+            'school': 'school',
+            'hospital': 'hospital',
+            'mall': 'shopping_mall',
+            'shopping': 'shopping_mall',
+            'restaurant': 'restaurant',
+            'bank': 'bank',
+            'pharmacy': 'pharmacy',
+            'gym': 'gym',
+            'park': 'park',
+            'airport': 'airport',
+            'bus': 'bus_station',
+            'railway': 'train_station',
+            'temple': 'hindu_temple',
+            'church': 'church',
+            'mosque': 'mosque'
+        }
+        
+        google_type = type_mapping.get(place_type.lower(), place_type)
+        
+        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+        params = {
+            'location': f"{lat},{lng}",
+            'radius': radius,
+            'type': google_type,
+            'key': google_api_key
+        }
+        
+        try:
+            response = requests.get(url, params=params)
+            data = response.json()
+            
+            if data.get('status') == 'OK':
+                places = []
+                for place in data.get('results', [])[:8]:  # Limit to 8 results
+                    place_info = {
+                        'name': place.get('name'),
+                        'vicinity': place.get('vicinity'),
+                        'rating': place.get('rating'),
+                        'types': place.get('types', []),
+                        'location': place.get('geometry', {}).get('location', {}),
+                        'price_level': place.get('price_level'),
+                        'photos': place.get('photos', [])
+                    }
+                    places.append(place_info)
+                
+                return {"places": places, "count": len(places)}
+            else:
+                return {"error": f"Google Places API error: {data.get('status')}"}
+        
+        except Exception as e:
+            return {"error": f"Error calling Google Places API: {str(e)}"}
 
 
 def smart_property_filter_enhanced(query: str, properties_data: List[Dict]) -> List[Dict]:
