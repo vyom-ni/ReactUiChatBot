@@ -5,3 +5,7 @@ class PropertyDetailsRequest(BaseModel):
 
 class PropertyDetailsResponse(BaseModel):
     details: str
+
+class PropertyDeitail(BaseModel):
+    property_name: str
+    place_type: str 

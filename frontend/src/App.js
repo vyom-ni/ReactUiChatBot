@@ -12,6 +12,7 @@ const EnhancedPropertyChatbot = () => {
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [lastMentionedProperty, setLastMentionedProperty] = useState(null); // Track last property discussed
+  const [sessionID, setSessionID] = useState(null);
   const messagesEndRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -25,6 +26,7 @@ const EnhancedPropertyChatbot = () => {
 
   // Load properties and initialize
   useEffect(() => {
+    create_session();
     loadProperties();
     initializeWelcomeMessage();
   }, []);
@@ -82,8 +84,9 @@ What kind of property are you looking for? 😊`,
 
   const loadProperties = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/properties');
+      const response = await fetch('http://localhost:8001/properties/list_properties');
       const data = await response.json();
+      console.log('Properties loaded:', data);
       setProperties(data.properties || []);
       setMapProperties(data.map_properties || []);
       console.log('Loaded properties for map:', data.map_properties?.length || 0);
@@ -91,6 +94,22 @@ What kind of property are you looking for? 😊`,
       console.error('Error loading properties:', error);
     }
   };
+
+  const create_session = async () => {
+    try {
+      const response = await fetch('http://localhost:8001/chat/create_session');
+      if (response.ok) {
+        const data = await response.json();
+        setSessionID(data.session_id);
+        console.log('New session created:', data);
+        return data.session_id;
+      } else {
+        console.error('Error creating session:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+    }
+  }
 
   const initializeGoogleMap = () => {
     if (!window.google || !window.google.maps || !mapRef.current || !showMap) return;
@@ -215,18 +234,19 @@ What kind of property are you looking for? 😊`,
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch('http://localhost:8001/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: message,
-          last_mentioned_property: lastMentionedProperty // Send context to backend
+          query: message,
+          session_id: sessionID,
         })
       });
 
       const data = await response.json();
+      console.log('Response from server:', data);
 
       const botMessage = {
         id: Date.now() + 1,
@@ -259,9 +279,16 @@ What kind of property are you looking for? 😊`,
 
   const clearChat = async () => {
     try {
-      await fetch('http://localhost:8000/api/clear-chat', {
-        method: 'POST'
+      const currentSessionId = sessionID || null;
+      const response = await fetch(`http://localhost:8001/chat/session/${currentSessionId}`, {
+        method: 'DELETE',
       });
+
+      const data = await response.json();
+      console.log("Deleted Chat :", data);
+
+      const newSessionId = await create_session();
+      console.log('New session created:', newSessionId);
       
       setMessages([]);
       setUserBehavior({});
@@ -283,7 +310,7 @@ What kind of property are you looking for? 😊`,
       // Set the property as last mentioned for context
       setLastMentionedProperty(propertyName);
       
-      const response = await fetch('http://localhost:8000/api/nearby', {
+      const response = await fetch('http://localhost:8001/properties/nearby', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -646,7 +673,7 @@ What kind of property are you looking for? 😊`,
 
   return (
     <div style={{ 
-      height: '100vh', 
+      height: '100%', 
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       padding: '20px',

@@ -17,11 +17,10 @@ sessions = {}
 async def chat(request: ChatRequest):
     """Main chat endpoint for property assistance"""
     try:
-        session_id = request.session_id or f"session_{datetime.now().timestamp()}"
+        session_id = request.session_id 
         
-        # Create new session if doesn't exist
         if session_id not in sessions:
-            sessions[session_id] = EnhancedPropertyChatbot()
+            raise HTTPException(status_code=404, detail="Invalid session ID")
         
         session_chatbot = sessions[session_id]
         response, suggestions = session_chatbot.get_ai_response(request.query)
@@ -37,6 +36,17 @@ async def chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+    
+@router.get("/create_session")
+async def create_session():
+    """Create a new chat session"""
+    try:
+        session_id = f"session_{datetime.now().timestamp()}"
+        sessions[session_id] = EnhancedPropertyChatbot()
+        return {"session_id": session_id, "message": "Session created successfully"}
+    except Exception as e:
+        logger.error(f"Error creating session: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Session creation error: {str(e)}")
 
 @router.delete("/session/{session_id}")
 async def clear_session(session_id: str):
