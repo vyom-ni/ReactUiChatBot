@@ -91,8 +91,15 @@ const AuthSystem = () => {
         
         // Redirect to your landing page
         setTimeout(() => {
-            window.location.href = '/home';
-        }, 1500);
+            if (formData.email === "admin@gmail.com")
+            {
+              window.location.href = '/admin'
+            }
+            else
+            {
+              window.location.href = '/home';
+            }    
+        }, 1000);
       }else {
         setMessage(data.detail || 'Something went wrong');
       }

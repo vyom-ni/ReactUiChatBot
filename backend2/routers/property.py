@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
 import requests
+import math
 import logging
 from models.property import PropertyDetailsRequest, PropertyDetailsResponse, PropertyDeitail
 from services.chatbot import EnhancedPropertyChatbot
@@ -30,23 +31,33 @@ async def get_properties():
     """Get all properties with coordinates for map display"""
 
     properties_with_coords = []
+    clean_properties = []
+
     for prop in chatbot.properties_data:
-        if prop.get('Latitude') and prop.get('Longitude'):
+        # Sanitize individual property
+        sanitized_prop = {
+            k: (None if isinstance(v, float) and (math.isnan(v) or math.isinf(v)) else v)
+            for k, v in prop.items()
+        }
+        clean_properties.append(sanitized_prop)
+
+        if sanitized_prop.get('Latitude') and sanitized_prop.get('Longitude'):
             properties_with_coords.append({
                 'id': len(properties_with_coords) + 1,
-                'name': prop.get('Building Name'),
-                'location': prop.get('Location'),
-                'lat': prop.get('Latitude'),
-                'lng': prop.get('Longitude'),
-                'price': prop.get('Price Range (Lakhs)'),
-                'types': prop.get('Apartment Types'),
-                'amenities': prop.get('Amenities'),
-                'contact': prop.get('Builder Contact'),
-                'builder': prop.get('Builder Name'),
-                'status': prop.get('Availability Status')
+                'name': sanitized_prop.get('Building Name'),
+                'location': sanitized_prop.get('Location'),
+                'lat': sanitized_prop.get('Latitude'),
+                'lng': sanitized_prop.get('Longitude'),
+                'price': sanitized_prop.get('Price Range (Lakhs)'),
+                'types': sanitized_prop.get('Apartment Types'),
+                'amenities': sanitized_prop.get('Amenities'),
+                'contact': sanitized_prop.get('Builder Contact'),
+                'builder': sanitized_prop.get('Builder Name'),
+                'status': sanitized_prop.get('Availability Status')
             })
+
     return {
-        "properties": chatbot.properties_data,
+        "properties": clean_properties,
         "map_properties": properties_with_coords,
         "count": len(properties_with_coords)
     }
