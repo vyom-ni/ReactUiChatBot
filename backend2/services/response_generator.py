@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from utils import get_greeting
+from utils.utils import get_greeting
 
 class ResponseGenerator:
     """Generate contextual responses and follow-up suggestions"""

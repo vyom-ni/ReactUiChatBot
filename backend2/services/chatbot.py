@@ -7,7 +7,7 @@ from logging import basicConfig, INFO,Logger
 from services.property_filter import PropertyFilter
 from services.preference_extractor import PreferenceExtractor
 from services.response_generator import ResponseGenerator
-from utils import get_prompt, get_greeting
+from utils.utils import get_prompt, get_greeting
 import logging
 from config import GEMINI_API_KEY, GOOGLE_MAPS_API_KEY
 from logging import Logger as logger
