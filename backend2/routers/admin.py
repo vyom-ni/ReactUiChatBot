@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from config import USERS_FILE, APARTMENT_DATA
+from routers.property import load_property_bot
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ async def upload_data(file: UploadFile = File(...)):
         with open(APARTMENT_DATA, "w", encoding="utf-8") as f:
             json.dump(json_data, f, indent=2)
 
+        load_property_bot()
         return {"message": "Excel file processed and saved successfully."}
 
     except Exception as e:

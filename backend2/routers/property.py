@@ -14,7 +14,12 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-chatbot = EnhancedPropertyChatbot()
+chatbot = None
+def load_property_bot():
+    global chatbot
+    chatbot = EnhancedPropertyChatbot()
+
+load_property_bot()
 
 @router.post("/details", response_model=PropertyDetailsResponse)
 async def get_property_details(request: PropertyDetailsRequest):
