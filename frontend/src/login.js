@@ -12,12 +12,54 @@ const AuthSystem = () => {
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    // For phone number fields, only allow digits and limit to 10 characters
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, ''); // Remove non-digits
+      if (digitsOnly.length <= 10) {
+        setFormData({
+          ...formData,
+          [name]: digitsOnly
+        });
+      }
+      return;
+    }
+    
+    // Clear password error when user starts typing
+    if (name === 'password') {
+      setPasswordError('');
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+  };
+
+  const validatePasswordOnBlur = () => {
+    if (!isLogin && formData.password) {
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (formData.password.length < 8) {
+        setPasswordError('Password must be at least 8 characters long');
+        return false;
+      } else if (!passwordRegex.test(formData.password)) {
+        setPasswordError('Password must include at least one letter, one number, and one special character (@$!%*?&)');
+        return false;
+      } else {
+        setPasswordError('');
+        return true;
+      }
+    }
+    return true;
+  };
+
+  const handlePasswordBlur = (e) => {
+    e.target.style.borderColor = '#e1e5e9';
+    validatePasswordOnBlur();
   };
 
   const validateAdminForm = () => {
@@ -35,13 +77,23 @@ const AuthSystem = () => {
         setMessage('Passwords do not match');
         return false;
       }
-      if (formData.password.length < 6) {
-        setMessage('Password must be at least 6 characters');
+      
+      // Enhanced password validation
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        setMessage('Password must be at least 8 characters long and include at least one letter, one number, and one special character (@$!%*?&)');
         return false;
       }
-      // Basic phone validation
+      
+      // Phone validation
       if (!/^\d{10}$/.test(formData.phone)) {
-        setMessage('Phone number must be 10 digits');
+        setMessage('Phone number must be exactly 10 digits');
+        return false;
+      }
+    } else {
+      // For admin login, check minimum password length
+      if (formData.password.length < 8) {
+        setMessage('Password must be at least 8 characters long');
         return false;
       }
     }
@@ -60,6 +112,13 @@ const AuthSystem = () => {
       setMessage('Phone number is required');
       return false;
     }
+    
+    // Phone number validation for user
+    if (!/^\d{10}$/.test(formData.phone)) {
+      setMessage('Phone number must be exactly 10 digits (e.g., 9876543210)');
+      return false;
+    }
+    
     return true;
   };
 
@@ -71,7 +130,7 @@ const AuthSystem = () => {
     try {
       // For user login, we just check if phone number exists and redirect
       // You can add actual API call here if needed
-      if (formData.phone.length === 10) {
+      if (formData.phone.length === 10 && /^\d{10}$/.test(formData.phone)) {
         setMessage('Login successful!');
         // Redirect to chat page
         setTimeout(() => {
@@ -150,6 +209,7 @@ const AuthSystem = () => {
   const switchAuthType = (type) => {
     setAuthType(type);
     setMessage('');
+    setPasswordError('');
     setIsLogin(true);
     setFormData({
       email: '',
@@ -163,6 +223,7 @@ const AuthSystem = () => {
   const switchMode = () => {
     setIsLogin(!isLogin);
     setMessage('');
+    setPasswordError('');
     setFormData({
       email: '',
       password: '',
@@ -184,10 +245,11 @@ const AuthSystem = () => {
       <div style={{
         backgroundColor: 'white',
         borderRadius: '20px',
-        padding: '40px',
+        padding: window.innerWidth <= 768 ? '30px' : '40px',
         boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
         width: '100%',
-        maxWidth: '400px'
+        maxWidth: window.innerWidth >= 1440 ? '450px' : window.innerWidth >= 1210 ? '420px' : '400px',
+        margin: '0 auto'
       }}>
         {/* Auth Type Selector */}
         <div style={{
@@ -201,10 +263,10 @@ const AuthSystem = () => {
             onClick={() => switchAuthType('user')}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: window.innerWidth <= 768 ? '10px' : '12px',
               border: 'none',
               borderRadius: '8px',
-              fontSize: '14px',
+              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
               fontWeight: 'bold',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
@@ -218,10 +280,10 @@ const AuthSystem = () => {
             onClick={() => switchAuthType('admin')}
             style={{
               flex: 1,
-              padding: '12px',
+              padding: window.innerWidth <= 768 ? '10px' : '12px',
               border: 'none',
               borderRadius: '8px',
-              fontSize: '14px',
+              fontSize: window.innerWidth <= 768 ? '12px' : '14px',
               fontWeight: 'bold',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
@@ -237,13 +299,13 @@ const AuthSystem = () => {
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <h1 style={{
             margin: 0,
-            fontSize: '28px',
+            fontSize: window.innerWidth <= 768 ? '24px' : '28px',
             color: '#333',
             marginBottom: '8px'
           }}>
             {authType === 'user' 
               ? '👤 User Access' 
-              : (isLogin ? '🔐 Admin Login' : '🎉 Admin Signup')
+              : (isLogin ? '🔐 Admin Login' : '🛡️ Admin Signup')
             }
           </h1>
           <p style={{
@@ -259,17 +321,17 @@ const AuthSystem = () => {
         </div>
 
         {/* Message Display */}
-        {message && (
+        {(message || passwordError) && (
           <div style={{
             padding: '12px',
             borderRadius: '8px',
             marginBottom: '20px',
-            backgroundColor: message.includes('successful') ? '#d4edda' : '#f8d7da',
-            border: `1px solid ${message.includes('successful') ? '#c3e6cb' : '#f5c6cb'}`,
-            color: message.includes('successful') ? '#155724' : '#721c24',
+            backgroundColor: (message && message.includes('successful')) ? '#d4edda' : '#f8d7da',
+            border: `1px solid ${(message && message.includes('successful')) ? '#c3e6cb' : '#f5c6cb'}`,
+            color: (message && message.includes('successful')) ? '#155724' : '#721c24',
             fontSize: '14px'
           }}>
-            {message}
+            {passwordError || message}
           </div>
         )}
 
@@ -292,7 +354,10 @@ const AuthSystem = () => {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="Enter your phone number"
+                placeholder="Enter your 10-digit phone number"
+                maxLength="10"
+                pattern="[0-9]*"
+                inputMode="numeric"
                 style={{
                   width: '100%',
                   padding: '12px',
@@ -306,6 +371,14 @@ const AuthSystem = () => {
                 onFocus={(e) => e.target.style.borderColor = '#667eea'}
                 onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
               />
+              <div style={{
+                fontSize: '12px',
+                color: '#666',
+                marginTop: '4px',
+                fontStyle: 'italic'
+              }}>
+                Enter exactly 10 digits (e.g., 9876543210)
+              </div>
             </div>
           ) : (
             // Admin Login/Signup Form
@@ -393,7 +466,10 @@ const AuthSystem = () => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    placeholder="Enter 10-digit phone number"
+                    placeholder="Enter your 10-digit phone number"
+                    maxLength="10"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -407,6 +483,14 @@ const AuthSystem = () => {
                     onFocus={(e) => e.target.style.borderColor = '#667eea'}
                     onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
                   />
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginTop: '4px',
+                    fontStyle: 'italic'
+                  }}>
+                    Exactly 10 digits required
+                  </div>
                 </div>
               )}
 
@@ -426,6 +510,7 @@ const AuthSystem = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
+                  onBlur={handlePasswordBlur}
                   placeholder="Enter your password"
                   style={{
                     width: '100%',
@@ -438,8 +523,17 @@ const AuthSystem = () => {
                     boxSizing: 'border-box'
                   }}
                   onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                  onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
                 />
+                {!isLogin && (
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#666',
+                    marginTop: '4px',
+                    fontStyle: 'italic'
+                  }}>
+                    Minimum 8 characters with at least one letter, one number, and one special character (@$!%*?&)
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password Field (Admin Signup only) */}
@@ -481,6 +575,7 @@ const AuthSystem = () => {
           {/* Submit Button */}
           <button
             type="submit"
+            onClick={handleSubmit}
             disabled={isLoading}
             style={{
               width: '100%',
@@ -511,7 +606,7 @@ const AuthSystem = () => {
           >
             {isLoading ? '⏳ Processing...' : (
               authType === 'user' ? '💬 Go to Chat' : 
-              (isLogin ? '🔐 Admin Sign In' : '🎉 Create Admin Account')
+              (isLogin ? '🔐 Admin Sign In' : '🛡️ Create Admin Account')
             )}
           </button>
         </div>
