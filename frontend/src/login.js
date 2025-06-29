@@ -2,22 +2,43 @@ import React, { useState } from 'react';
 
 const AuthSystem = () => {
   const [authType, setAuthType] = useState('user'); // 'user' or 'admin'
-  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    name: '',
-    phone: '',
-    confirmPassword: ''
+    phone: ''
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // For phone input, only allow digits and limit to 10 characters
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      if (digitsOnly.length <= 10) {
+        setFormData({
+          ...formData,
+          [name]: digitsOnly
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+  };
+
+  const validateEmail = (email) => {
+    // More comprehensive email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone) => {
+    // Check if phone number has exactly 10 digits
+    return /^\d{10}$/.test(phone);
   };
 
   const validateAdminForm = () => {
@@ -26,29 +47,15 @@ const AuthSystem = () => {
       return false;
     }
 
-    if (!isLogin) {
-      if (!formData.name || !formData.phone) {
-        setMessage('All fields are required for signup');
-        return false;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setMessage('Passwords do not match');
-        return false;
-      }
-      if (formData.password.length < 6) {
-        setMessage('Password must be at least 6 characters');
-        return false;
-      }
-      // Basic phone validation
-      if (!/^\d{10}$/.test(formData.phone)) {
-        setMessage('Phone number must be 10 digits');
-        return false;
-      }
+    // Enhanced email validation
+    if (!validateEmail(formData.email)) {
+      setMessage('Please enter a valid email address (e.g., user@example.com)');
+      return false;
     }
 
-    // Basic email validation
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setMessage('Please enter a valid email');
+    // Password validation (minimum 6 characters)
+    if (formData.password.length < 6) {
+      setMessage('Password must be at least 6 characters long');
       return false;
     }
 
@@ -60,6 +67,13 @@ const AuthSystem = () => {
       setMessage('Phone number is required');
       return false;
     }
+
+    // Validate phone number has exactly 10 digits
+    if (!validatePhone(formData.phone)) {
+      setMessage('Phone number must be exactly 10 digits');
+      return false;
+    }
+
     return true;
   };
 
@@ -69,27 +83,37 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      // For user login, we just check if phone number exists and redirect
-      // You can add actual API call here if needed
-      if (formData.phone.length === 10) {
-        setMessage('Login successful!');
-        // Redirect to chat page
+      const response = await fetch('http://localhost:8001/auth/user_login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: formData.phone,
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message || 'Login successful!');
+        
+        // Redirect to admin page
         setTimeout(() => {
-          window.location.href = '/chat';
+          window.location.href = '/home';
         }, 1000);
       } else {
-        setMessage('Please enter a valid 10-digit phone number');
+        setMessage(data.detail || 'Invalid credentials');
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessage('Network error occurred');
+      setMessage('Something went wrong!.');
     }
 
     setIsLoading(false);
   };
 
-  const handleAdminSubmit = async (e) => {
-    e.preventDefault();
+  const handleAdminLogin = async () => {
     setMessage('');
     
     if (!validateAdminForm()) return;
@@ -97,40 +121,33 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/signup';
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : { 
-            email: formData.email, 
-            password: formData.password, 
-            name: formData.name, 
-            phone: formData.phone 
-          };
-
-      const response = await fetch(`http://localhost:8001${endpoint}`, {
+      const response = await fetch('http://localhost:8001/auth/admin_login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
       });
 
       const data = await response.json();
+      console.log(data);
 
       if (response.ok) {
-        // Use React state instead of localStorage
-        setMessage(data.message || `${isLogin ? 'Login' : 'Signup'} successful!`);
+        setMessage(data.message || 'Login successful!');
         
         // Redirect to admin page
         setTimeout(() => {
           window.location.href = '/admin';
         }, 1000);
       } else {
-        setMessage(data.detail || 'Something went wrong');
+        setMessage(data.detail || 'Invalid credentials');
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessage('Network error. Make sure the backend server is running on port 8001.');
+      setMessage('Something went wrong!.');
     }
 
     setIsLoading(false);
@@ -143,33 +160,51 @@ const AuthSystem = () => {
     if (authType === 'user') {
       await handleUserLogin();
     } else {
-      await handleAdminSubmit(e);
+      await handleAdminLogin();
     }
   };
 
   const switchAuthType = (type) => {
     setAuthType(type);
     setMessage('');
-    setIsLogin(true);
     setFormData({
       email: '',
       password: '',
-      name: '',
-      phone: '',
-      confirmPassword: ''
+      phone: ''
     });
   };
 
-  const switchMode = () => {
-    setIsLogin(!isLogin);
-    setMessage('');
-    setFormData({
-      email: '',
-      password: '',
-      name: '',
-      phone: '',
-      confirmPassword: ''
-    });
+  // Real-time validation feedback
+  const getInputStyle = (fieldName) => {
+    const baseStyle = {
+      width: '100%',
+      padding: '12px',
+      border: '2px solid #e1e5e9',
+      borderRadius: '8px',
+      fontSize: '14px',
+      outline: 'none',
+      transition: 'border-color 0.3s ease',
+      boxSizing: 'border-box'
+    };
+
+    // Add validation styling
+    if (fieldName === 'email' && formData.email) {
+      if (validateEmail(formData.email)) {
+        baseStyle.borderColor = '#28a745';
+      } else {
+        baseStyle.borderColor = '#dc3545';
+      }
+    }
+
+    if (fieldName === 'phone' && formData.phone) {
+      if (validatePhone(formData.phone)) {
+        baseStyle.borderColor = '#28a745';
+      } else {
+        baseStyle.borderColor = '#dc3545';
+      }
+    }
+
+    return baseStyle;
   };
 
   return (
@@ -229,7 +264,7 @@ const AuthSystem = () => {
               color: authType === 'admin' ? 'white' : '#666'
             }}
           >
-            👨‍💼 Admin
+            👨‍💼 Admin Login
           </button>
         </div>
 
@@ -241,10 +276,7 @@ const AuthSystem = () => {
             color: '#333',
             marginBottom: '8px'
           }}>
-            {authType === 'user' 
-              ? '👤 User Access' 
-              : (isLogin ? '🔐 Admin Login' : '🎉 Admin Signup')
-            }
+            {authType === 'user' ? '👤 User Access' : '🔐 Admin Login'}
           </h1>
           <p style={{
             margin: 0,
@@ -252,8 +284,8 @@ const AuthSystem = () => {
             fontSize: '14px'
           }}>
             {authType === 'user' 
-              ? 'Enter your phone number to continue' 
-              : (isLogin ? 'Sign in to admin panel' : 'Create admin account')
+              ? 'Enter your 10-digit phone number' 
+              : 'Sign in to admin panel'
             }
           </p>
         </div>
@@ -273,7 +305,7 @@ const AuthSystem = () => {
           </div>
         )}
 
-        {/* Form Container */}
+        {/* Form */}
         <div>
           {authType === 'user' ? (
             // User Login Form (Phone Only)
@@ -285,65 +317,43 @@ const AuthSystem = () => {
                 fontWeight: 'bold',
                 color: '#333'
               }}>
-                Phone Number
+                Phone Number (10 digits)
               </label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="Enter your phone number"
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e1e5e9',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'border-color 0.3s ease',
-                  boxSizing: 'border-box'
+                placeholder="Enter 10-digit phone number"
+                maxLength="10"
+                style={getInputStyle('phone')}
+                onFocus={(e) => {
+                  if (!formData.phone || validatePhone(formData.phone)) {
+                    e.target.style.borderColor = '#667eea';
+                  }
                 }}
-                onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                onBlur={(e) => {
+                  if (!formData.phone) {
+                    e.target.style.borderColor = '#e1e5e9';
+                  }
+                }}
               />
-            </div>
-          ) : (
-            // Admin Login/Signup Form
-            <>
-              {/* Name Field (Admin Signup only) */}
-              {!isLogin && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '6px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: '#333'
-                  }}>
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e1e5e9',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                    onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
-                  />
+              {formData.phone && (
+                <div style={{
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  color: validatePhone(formData.phone) ? '#28a745' : '#dc3545'
+                }}>
+                  {validatePhone(formData.phone) 
+                    ? '✓ Valid phone number' 
+                    : `${formData.phone.length}/10 digits`
+                  }
                 </div>
               )}
-
+            </div>
+          ) : (
+            // Admin Login Form
+            <>
               {/* Email Field */}
               <div style={{ marginBottom: '20px' }}>
                 <label style={{
@@ -361,54 +371,31 @@ const AuthSystem = () => {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Enter your email"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e1e5e9',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box'
+                  style={getInputStyle('email')}
+                  onFocus={(e) => {
+                    if (!formData.email || validateEmail(formData.email)) {
+                      e.target.style.borderColor = '#667eea';
+                    }
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                  onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                  onBlur={(e) => {
+                    if (!formData.email) {
+                      e.target.style.borderColor = '#e1e5e9';
+                    }
+                  }}
                 />
-              </div>
-
-              {/* Phone Field (Admin Signup only) */}
-              {!isLogin && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '6px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: '#333'
+                {formData.email && (
+                  <div style={{
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    color: validateEmail(formData.email) ? '#28a745' : '#dc3545'
                   }}>
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter 10-digit phone number"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e1e5e9',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                    onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
-                  />
-                </div>
-              )}
+                    {validateEmail(formData.email) 
+                      ? '✓ Valid email format' 
+                      : '✗ Invalid email format'
+                    }
+                  </div>
+                )}
+              </div>
 
               {/* Password Field */}
               <div style={{ marginBottom: '20px' }}>
@@ -419,7 +406,7 @@ const AuthSystem = () => {
                   fontWeight: 'bold',
                   color: '#333'
                 }}>
-                  Password
+                  Password (min 6 characters)
                 </label>
                 <input
                   type="password"
@@ -430,57 +417,43 @@ const AuthSystem = () => {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '2px solid #e1e5e9',
+                    border: `2px solid ${formData.password.length >= 6 ? '#28a745' : '#e1e5e9'}`,
                     borderRadius: '8px',
                     fontSize: '14px',
                     outline: 'none',
                     transition: 'border-color 0.3s ease',
                     boxSizing: 'border-box'
                   }}
-                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                  onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                  onFocus={(e) => {
+                    if (formData.password.length >= 6) {
+                      e.target.style.borderColor = '#667eea';
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (formData.password.length < 6) {
+                      e.target.style.borderColor = '#e1e5e9';
+                    }
+                  }}
                 />
-              </div>
-
-              {/* Confirm Password Field (Admin Signup only) */}
-              {!isLogin && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{
-                    display: 'block',
-                    marginBottom: '6px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: '#333'
+                {formData.password && (
+                  <div style={{
+                    fontSize: '12px',
+                    marginTop: '4px',
+                    color: formData.password.length >= 6 ? '#28a745' : '#dc3545'
                   }}>
-                    Confirm Password
-                  </label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="Re-enter your password"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e1e5e9',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
-                    onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
-                  />
-                </div>
-              )}
+                    {formData.password.length >= 6 
+                      ? '✓ Password meets requirements' 
+                      : `${formData.password.length}/6 characters minimum`
+                    }
+                  </div>
+                )}
+              </div>
             </>
           )}
 
           {/* Submit Button */}
           <button
-            type="submit"
+            onClick={handleSubmit}
             disabled={isLoading}
             style={{
               width: '100%',
@@ -510,34 +483,10 @@ const AuthSystem = () => {
             }}
           >
             {isLoading ? '⏳ Processing...' : (
-              authType === 'user' ? '💬 Go to Chat' : 
-              (isLogin ? '🔐 Admin Sign In' : '🎉 Create Admin Account')
+              authType === 'user' ? '💬 Go to Chat' : '🔐 Admin Sign In'
             )}
           </button>
         </div>
-
-        {/* Switch Mode (Admin only) */}
-        {authType === 'admin' && (
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
-              {isLogin ? "Don't have an admin account? " : "Already have an admin account? "}
-              <button
-                onClick={switchMode}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#667eea',
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
