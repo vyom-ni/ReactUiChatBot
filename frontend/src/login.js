@@ -83,7 +83,7 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8001/auth/user_login', {
+      const response = await fetch('http://54.147.150.238:8501/auth/user_login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8001/auth/admin_login', {
+      const response = await fetch('http://54.147.150.238:8501/auth/admin_login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

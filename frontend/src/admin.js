@@ -8,7 +8,7 @@ const AdminPage = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:8001/admin/list-users')
+    fetch('http://54.147.150.238:8501/admin/list-users')
       .then(res => res.json())
       .then(data => setUsers(data.users || []))
       .catch(err => console.error('Error fetching users:', err));
@@ -30,7 +30,7 @@ const AdminPage = () => {
 
     setIsUploading(true);
     try {
-      const response = await fetch('http://localhost:8001/admin/upload', {
+      const response = await fetch('http://54.147.150.238:8501/admin/upload', {
         method: 'POST',
         body: formData
       });
