@@ -93,10 +93,14 @@ const AuthSystem = () => {
         })
       });
 
+      
+
       const data = await response.json();
 
       if (response.ok) {
         setMessage(data.message || 'Login successful!');
+
+        localStorage.setItem('phone',formData.phone);
         
         // Redirect to admin page
         setTimeout(() => {
