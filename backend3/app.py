@@ -39,7 +39,6 @@ async def root():
         "version": "1.0.0",
     }
 
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

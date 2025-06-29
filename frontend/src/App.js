@@ -11,8 +11,18 @@ const EnhancedPropertyChatbot = () => {
   const [proactiveSuggestions, setProactiveSuggestions] = useState([]);
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
-  const [lastMentionedProperty, setLastMentionedProperty] = useState(null); // Track last property discussed
-  // const [sessionID, setSessionID] = useState(null);
+  const [lastMentionedProperty, setLastMentionedProperty] = useState(null);
+  
+  // Calendar form state
+  const [showCalendarForm, setShowCalendarForm] = useState(false);
+  const [calendarForm, setCalendarForm] = useState({
+    from: '',
+    to: 'vyomnisolutions@gmail.com',
+    date: '',
+    time: '',
+    message: ''
+  });
+  
   const messagesEndRef = useRef(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -100,7 +110,6 @@ What kind of property are you looking for? 😊`,
       const response = await fetch('http://localhost:8001/chat/create_session');
       if (response.ok) {
         const data = await response.json();
-        // setSessionID(data.session_id);
         localStorage.setItem("session_id", data.session_id);
         console.log('New session created:', data);
         return data.session_id;
@@ -203,7 +212,6 @@ What kind of property are you looking for? 😊`,
 
       window.findNearbyPlaces = (propertyName, type) => {
         setInputValue(`Find ${type}s near ${propertyName}`);
-        // setTimeout(() => sendMessage(`Find ${type}s near ${propertyName}`), 100);
         findNearbyPlaces(propertyName, type);
       };
 
@@ -300,7 +308,7 @@ What kind of property are you looking for? 😊`,
       setProactiveSuggestions([]);
       setNearbyPlaces([]);
       setSelectedProperty(null);
-      setLastMentionedProperty(null); // Clear memory
+      setLastMentionedProperty(null);
       
       // Reinitialize welcome message
       setTimeout(() => initializeWelcomeMessage(), 500);
@@ -379,6 +387,51 @@ What kind of property are you looking for? 😊`,
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  // Calendar form functions
+  const handleCalendarFormChange = (field, value) => {
+    setCalendarForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCalendarSubmit = (e) => {
+    e.preventDefault();
+    // Here you can implement the actual scheduling logic
+    console.log('Scheduling appointment:', calendarForm);
+    
+    // Add a message to the chat
+    const appointmentMessage = {
+      id: Date.now(),
+      type: 'bot',
+      content: `📅 **Appointment Scheduled Successfully!**\n\n**Details:**\n• From: ${calendarForm.from}\n• To: ${calendarForm.to}\n• Date: ${calendarForm.date}\n• Time: ${calendarForm.time}\n• Message: ${calendarForm.message}\n\nYou'll receive a confirmation email shortly. Thank you! 😊`,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    
+    setMessages(prev => [...prev, appointmentMessage]);
+    
+    // Reset form and close modal
+    setCalendarForm({
+      from: '',
+      to: 'vyomnisolutions@gmail.com',
+      date: '',
+      time: '',
+      message: ''
+    });
+    setShowCalendarForm(false);
+  };
+
+  const handleCalendarCancel = () => {
+    setCalendarForm({
+      from: '',
+      to: 'vyomnisolutions@gmail.com',
+      date: '',
+      time: '',
+      message: ''
+    });
+    setShowCalendarForm(false);
   };
 
   // Function to convert **text** to bold HTML
@@ -463,6 +516,53 @@ What kind of property are you looking for? 😊`,
     );
   };
 
+  // Add this function to make numbered suggestions clickable
+  const makeNumberedSuggestionsClickable = (content, handleSuggestionClick) => {
+    const lines = content.split('\n');
+
+    return lines.map((line, index) => {
+      const numberedLineRegex = /^\d+\.\s+/;
+
+      if (numberedLineRegex.test(line)) {
+        return (
+          <div
+            key={index}
+            onClick={() => {
+              const cleanSuggestion = line.replace(/^\d+\.\s+/, '').replace(/[🏠💰🛏️🎥🏊‍♂️🗺️🚗📅🏦📞💸😔🔍📸📍💬🤔👨‍👩‍👧‍👦💻]/g, '').trim();
+              sendMessage(cleanSuggestion);
+            }}
+            style={{
+              cursor: 'pointer',
+              padding: '4px 0',
+              transition: 'color 0.2s ease',
+              color: '#667eea'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.textDecoration = 'underline';
+              e.target.style.color = '#5a6fd8';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.textDecoration = 'none';
+              e.target.style.color = '#667eea';
+            }}
+            dangerouslySetInnerHTML={{
+              __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            }}
+          />
+        );
+      } else {
+        return (
+          <div
+            key={index}
+            dangerouslySetInnerHTML={{
+              __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            }}
+          />
+        );
+      }
+    });
+  };
+
   const MessageComponent = ({ message }) => (
     <div style={{
       display: 'flex',
@@ -492,15 +592,13 @@ What kind of property are you looking for? 😊`,
           )}
         </div>
         
-        <div style={{ 
-          whiteSpace: 'pre-wrap', 
+        <div style={{
+          whiteSpace: 'pre-wrap',
           lineHeight: '1.5',
           fontSize: '14px'
-        }}
-        dangerouslySetInnerHTML={{ 
-          __html: formatText(message.content)
-        }}
-        />
+        }}>
+          {makeNumberedSuggestionsClickable(message.content, handleSuggestionClick)}
+        </div>
         
         {/* Property Images */}
         {message.images && message.images.length > 0 && (
@@ -702,8 +800,203 @@ What kind of property are you looking for? 😊`,
       display: 'flex',
       padding: '20px',
       gap: '20px',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      position: 'relative'
     }}>
+      {/* Calendar Form Modal */}
+      {showCalendarForm && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '20px',
+            padding: '24px',
+            width: '90%',
+            maxWidth: '400px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '20px',
+              gap: '8px'
+            }}>
+              <span style={{ fontSize: '24px' }}>📅</span>
+              <h2 style={{ margin: 0, color: '#333', fontSize: '18px' }}>Schedule Appointment</h2>
+            </div>
+            
+            <form onSubmit={handleCalendarSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
+                  From (Your Email):
+                </label>
+                <input
+                  type="email"
+                  value={calendarForm.from}
+                  onChange={(e) => handleCalendarFormChange('from', e.target.value)}
+                  required
+                  placeholder="your.email@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #e1e5e9',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
+                  To:
+                </label>
+                <input
+                  type="email"
+                  value={calendarForm.to}
+                  onChange={(e) => handleCalendarFormChange('to', e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #e1e5e9',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                    backgroundColor: '#f8f9fa'
+                  }}
+                  readOnly
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
+                    Date:
+                  </label>
+                  <input
+                    type="date"
+                    value={calendarForm.date}
+                    onChange={(e) => handleCalendarFormChange('date', e.target.value)}
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e1e5e9',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                  />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
+                    Time:
+                  </label>
+                  <input
+                    type="time"
+                    value={calendarForm.time}
+                    onChange={(e) => handleCalendarFormChange('time', e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: '2px solid #e1e5e9',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                    onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
+                  Message:
+                </label>
+                <textarea
+                  value={calendarForm.message}
+                  onChange={(e) => handleCalendarFormChange('message', e.target.value)}
+                  placeholder="Please describe your requirements or any specific properties you'd like to discuss..."
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    border: '2px solid #e1e5e9',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#667eea'}
+                  onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleCalendarCancel}
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#f1f1f1',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    color: '#666'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: '12px',
+                    backgroundColor: '#667eea',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Schedule 📅
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Main Chat Container */}
       <div style={{
         flex: showMap ? '1' : '1',
@@ -846,6 +1139,30 @@ What kind of property are you looking for? 😊`,
               onBlur={(e) => e.target.style.borderColor = '#e1e5e9'}
               rows="1"
             />
+            
+            {/* Calendar Button */}
+            <button
+              onClick={() => setShowCalendarForm(true)}
+              style={{
+                padding: '10px 12px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '18px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '44px',
+                height: '44px'
+              }}
+              title="Schedule Appointment"
+            >
+              📅
+            </button>
+            
+            {/* Send Button */}
             <button
               onClick={() => sendMessage()}
               disabled={!inputValue.trim() || isLoading}

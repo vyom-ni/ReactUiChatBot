@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional, List
-import requests
 import math
 import logging
-from models.property import PropertyDetailsRequest, PropertyDetailsResponse, PropertyDeitail
-from services.chatbot import EnhancedPropertyChatbot
+
+from fastapi import APIRouter, HTTPException
+from services.chatbot_service import Chatbot_Service
+from schemas.property_schema import PropertyDetailsRequest, PropertyDetailsResponse, PropertyDeitail
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ router = APIRouter(
 chatbot = None
 def load_property_bot():
     global chatbot
-    chatbot = EnhancedPropertyChatbot()
+    chatbot = Chatbot_Service()
 
 load_property_bot()
 

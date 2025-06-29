@@ -15,7 +15,8 @@ RESPONSE STRUCTURE:
 1. Brief conversational response (acknowledge their request)
 2. Relevant property information focused on their specific interest
 3. Key details (only include price if they ask about budget)
-4. Three personalized follow-up questions
+4. Three personalized follow-up questions that user can ask 
+5. If the user replies with "1", "2", or "3", respond only to the corresponding follow-up question that was generated earlier.
 
 MEMORY & CONTEXT:
 {memory_context}

@@ -1,0 +1,13 @@
+1. Change directory to backend2:
+   cd ReactUiChatBot/backend2
+
+2. Install requirements:
+   pip install -r requirements.txt
+
+3. Run the backend (choose one):
+
+   a) Using Python:
+      python app.py
+
+   b) Using Uvicorn:
+      uvicorn app:app --host localhost --port 8001 --reload
