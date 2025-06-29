@@ -16,8 +16,7 @@ const EnhancedPropertyChatbot = () => {
   // Calendar form state
   const [showCalendarForm, setShowCalendarForm] = useState(false);
   const [calendarForm, setCalendarForm] = useState({
-    from: '',
-    to: 'vyomnisolutions@gmail.com',
+    fullName: '',
     date: '',
     time: '',
     message: ''
@@ -397,36 +396,63 @@ What kind of property are you looking for? 😊`,
     }));
   };
 
-  const handleCalendarSubmit = (e) => {
+  const handleCalendarSubmit = async (e) => {
     e.preventDefault();
-    // Here you can implement the actual scheduling logic
-    console.log('Scheduling appointment:', calendarForm);
-    
-    // Add a message to the chat
-    const appointmentMessage = {
-      id: Date.now(),
-      type: 'bot',
-      content: `📅 **Appointment Scheduled Successfully!**\n\n**Details:**\n• From: ${calendarForm.from}\n• To: ${calendarForm.to}\n• Date: ${calendarForm.date}\n• Time: ${calendarForm.time}\n• Message: ${calendarForm.message}\n\nYou'll receive a confirmation email shortly. Thank you! 😊`,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    
-    setMessages(prev => [...prev, appointmentMessage]);
-    
-    // Reset form and close modal
-    setCalendarForm({
-      from: '',
-      to: 'vyomnisolutions@gmail.com',
-      date: '',
-      time: '',
-      message: ''
-    });
-    setShowCalendarForm(false);
+
+    try {
+      console.log(calendarForm)
+      const response = await fetch('http://localhost:8001/schedule/s', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fullName: calendarForm.fullName,
+          date: calendarForm.date,
+          phone: localStorage.getItem('phone') || null,
+          time: calendarForm.time,
+          message: calendarForm.message
+        })
+      })
+
+      const result = await response.json();
+
+      if (!result.success) {
+        console.error('Error:', result.error);
+        // Optionally show error message to user
+        return;
+      }
+
+      console.log('Appointment scheduled successfully:', result);
+
+      // Create bot message
+      const appointmentMessage = {
+        id: Date.now(),
+        type: 'bot',
+        content: `📅 **Appointment Scheduled Successfully!**\n\n**Details:**\n• FullName: ${calendarForm.fullName}\n• Date: ${calendarForm.date}\n• Time: ${calendarForm.time}\n• Message: ${calendarForm.message}\n\nYou'll receive a confirmation email shortly. Thank you! 😊`,
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      setMessages(prev => [...prev, appointmentMessage]);
+
+      // Reset form and close modal
+      setCalendarForm({
+        fullName: '',
+        date: '',
+        time: '',
+        message: ''
+      });
+      setShowCalendarForm(false);
+    } catch (err) {
+      console.error('Network or server error:', err);
+      // Optionally show error message to user
+    }
   };
 
   const handleCalendarCancel = () => {
     setCalendarForm({
-      from: '',
-      to: 'vyomnisolutions@gmail.com',
+      fullName: '',
       date: '',
       time: '',
       message: ''
@@ -838,14 +864,14 @@ What kind of property are you looking for? 😊`,
             <form onSubmit={handleCalendarSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
-                  From (Your Email):
+                  Full Name
                 </label>
                 <input
-                  type="email"
-                  value={calendarForm.from}
-                  onChange={(e) => handleCalendarFormChange('from', e.target.value)}
+                  type="text"
+                  value={calendarForm.fullName}
+                  onChange={(e) => handleCalendarFormChange('fullName', e.target.value)}
                   required
-                  placeholder="your.email@example.com"
+                  placeholder="Full Name"
                   style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -860,28 +886,6 @@ What kind of property are you looking for? 😊`,
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 'bold', color: '#555' }}>
-                  To:
-                </label>
-                <input
-                  type="email"
-                  value={calendarForm.to}
-                  onChange={(e) => handleCalendarFormChange('to', e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    border: '2px solid #e1e5e9',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    outline: 'none',
-                    boxSizing: 'border-box',
-                    backgroundColor: '#f8f9fa'
-                  }}
-                  readOnly
-                />
-              </div>
 
               <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 1 }}>

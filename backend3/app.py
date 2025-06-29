@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import logging
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import chat, property, health, auth, admin
+from routers import chat, property, health, auth, admin, schedule
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ app.include_router(property.router)
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
+app.include_router(schedule.router)
 
 @app.get("/")
 async def root():
