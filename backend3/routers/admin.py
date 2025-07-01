@@ -1,6 +1,5 @@
 import io
 import os
-import datetime
 import logging
 import json
 from pathlib import Path
@@ -8,6 +7,8 @@ import pandas as pd
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from core.config import USERS_FILE, APARTMENT_DATA, SCHEDULE_DATA
 from routers.property import load_property_bot
+from datetime import datetime
+
 
 logger = logging.getLogger(__name__)
 
