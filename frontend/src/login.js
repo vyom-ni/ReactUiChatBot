@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { BASE_URL } from './config';
 
 const AuthSystem = () => {
   const [authType, setAuthType] = useState('user'); // 'user' or 'admin'
@@ -9,6 +11,7 @@ const AuthSystem = () => {
   });
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -83,7 +86,7 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://54.147.150.238:8501/auth/user_login', {
+      const response = await fetch(`${BASE_URL}/auth/user_login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,18 +96,16 @@ const AuthSystem = () => {
         })
       });
 
-      
-
       const data = await response.json();
 
       if (response.ok) {
         setMessage(data.message || 'Login successful!');
 
         localStorage.setItem('phone',formData.phone);
-        
-        // Redirect to admin page
+        navigate('/home');
+       
         setTimeout(() => {
-          window.location.href = '/home';
+          
         }, 1000);
       } else {
         setMessage(data.detail || 'Invalid credentials');
@@ -125,7 +126,7 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://54.147.150.238:8501/auth/admin_login', {
+      const response = await fetch(`%${BASE_URL}/auth/admin_login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ const AuthSystem = () => {
         
         // Redirect to admin page
         setTimeout(() => {
-          window.location.href = '/admin';
+          navigate('/admin');
         }, 1000);
       } else {
         setMessage(data.detail || 'Invalid credentials');

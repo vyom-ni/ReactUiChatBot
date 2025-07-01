@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BASE_URL } from './config';
 
 const EnhancedPropertyChatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -93,7 +94,7 @@ What kind of property are you looking for? 😊`,
 
   const loadProperties = async () => {
     try {
-      const response = await fetch('http://54.147.150.238:8501/properties/list_properties');
+      const response = await fetch(`${BASE_URL}/properties/list_properties`);
       const data = await response.json();
       console.log('Properties loaded:', data);
       setProperties(data.properties || []);
@@ -106,7 +107,7 @@ What kind of property are you looking for? 😊`,
 
   const create_session = async () => {
     try {
-      const response = await fetch('http://54.147.150.238:8501/chat/create_session');
+      const response = await fetch(`${BASE_URL}/chat/create_session`);
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem("session_id", data.session_id);
@@ -246,7 +247,7 @@ What kind of property are you looking for? 😊`,
       const sessionID = localStorage.getItem("session_id");
       console.log('Querying server with message:', message, 'Session ID:', sessionID);
 
-      const response = await fetch('http://54.147.150.238:8501/chat', {
+      const response = await fetch(`${BASE_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +293,7 @@ What kind of property are you looking for? 😊`,
   const clearChat = async () => {
     try {
       const currentSessionId = localStorage.getItem("session_id");
-      const response = await fetch(`http://54.147.150.238:8501/chat/session/${currentSessionId}`, {
+      const response = await fetch(`${BASE_URL}/chat/session/${currentSessionId}`, {
         method: 'DELETE',
       });
 
@@ -333,7 +334,7 @@ What kind of property are you looking for? 😊`,
 
       console.log(`Finding nearby ${placeType}s for property: ${propertyName}`);
       
-      const response = await fetch('http://54.147.150.238:8501/properties/nearby', {
+      const response = await fetch(`${BASE_URL}/properties/nearby`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -401,7 +402,7 @@ What kind of property are you looking for? 😊`,
 
     try {
       console.log(calendarForm)
-      const response = await fetch('http://54.147.150.238:8501/schedule/s', {
+      const response = await fetch(`${BASE_URL}/schedule`, {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

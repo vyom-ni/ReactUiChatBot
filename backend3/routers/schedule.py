@@ -4,11 +4,12 @@ from schemas.schedule_schema import ScheduleSchema
 from schemas.schedule_schema import ScheduleResponseSchema
 import logging, uuid, os, json
 from datetime import datetime
+from core.config import SCHEDULE_DATA
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/schedule", tags=["schedule"])
 
-SCHEDULE_FILE = 'schedule_data.json'
+SCHEDULE_FILE = SCHEDULE_DATA
 
 def generate_appointment_id():
     return str(uuid.uuid4())
@@ -18,15 +19,17 @@ def save_appointment_to_file(appointment):
         with open(SCHEDULE_FILE, 'r') as f:
             data = json.load(f)
     else:
-        data = []
-    data.append(appointment)
+        data = {}
+
+    # Save appointment using its ID as key
+    data[appointment['id']] = appointment
+
     with open(SCHEDULE_FILE, 'w') as f:
         json.dump(data, f, indent=4)
 
-@router.post('/s', response_model=ScheduleResponseSchema)
+@router.post('/', response_model=ScheduleResponseSchema)
 async def schedule_appointment(request_model: ScheduleSchema = Body(...)):
     try:
-        print(request_model)
         appointment = {
             'id': generate_appointment_id(),
             'name': request_model.fullName,
@@ -34,7 +37,7 @@ async def schedule_appointment(request_model: ScheduleSchema = Body(...)):
             'date': request_model.date,
             'time': request_model.time,
             'message': request_model.message,
-            'status': 'scheduled',
+            'status': 'pending',
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()
         }
