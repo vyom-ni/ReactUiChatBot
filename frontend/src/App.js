@@ -544,52 +544,41 @@ What kind of property are you looking for? 😊`,
   };
 
   // Add this function to make numbered suggestions clickable
-  const makeNumberedSuggestionsClickable = (content, handleSuggestionClick) => {
+  const makeNumberedSuggestionsClickable = (content) => {
     const lines = content.split('\n');
 
     return lines.map((line, index) => {
       const numberedLineRegex = /^\d+\.\s+/;
 
       if (numberedLineRegex.test(line)) {
+        // It's a numbered suggestion — render it in bold but not clickable
         return (
           <div
             key={index}
-            onClick={() => {
-              const cleanSuggestion = line.replace(/^\d+\.\s+/, '').replace(/[🏠💰🛏️🎥🏊‍♂️🗺️🚗📅🏦📞💸😔🔍📸📍💬🤔👨‍👩‍👧‍👦💻]/g, '').trim();
-              sendMessage(cleanSuggestion);
-            }}
             style={{
-              cursor: 'pointer',
               padding: '4px 0',
-              transition: 'color 0.2s ease',
-              color: '#667eea'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.textDecoration = 'underline';
-              e.target.style.color = '#5a6fd8';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.textDecoration = 'none';
-              e.target.style.color = '#667eea';
+              fontWeight: 'bold',
+              color: '#444',
+              fontSize: '14px'
             }}
             dangerouslySetInnerHTML={{
-              __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              __html: line.replace(/\\(.?)\\*/g, '<strong>$1</strong>')
             }}
           />
         );
       } else {
+        // Normal text line, not a suggestion
         return (
           <div
             key={index}
             dangerouslySetInnerHTML={{
-              __html: line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              __html: line.replace(/\\(.?)\\*/g, '<strong>$1</strong>')
             }}
           />
         );
       }
     });
   };
-
   const MessageComponent = ({ message }) => (
     <div style={{
       display: 'flex',

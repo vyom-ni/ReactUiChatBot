@@ -126,7 +126,7 @@ const AuthSystem = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`%${BASE_URL}/auth/admin_login`, {
+      const response = await fetch(`${BASE_URL}/auth/admin_login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
