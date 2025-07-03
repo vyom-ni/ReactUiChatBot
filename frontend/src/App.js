@@ -71,11 +71,11 @@ const EnhancedPropertyChatbot = () => {
 
 I'm an AI that learns from our conversation to help you find the perfect property. Here's what makes me special:
 
-🤖 **Intelligent Suggestions** - I analyze your preferences and proactively suggest what you might need next
-🗺️ **Location Intelligence** - I can show nearby schools, hospitals, malls around any property
-📊 **Smart Filtering** - I learn what matters most to you and prioritize accordingly
+🤖 <b>Intelligent Suggestions</b> - I analyze your preferences and proactively suggest what you might need next
+🗺️ <b>Location Intelligence</b> - I can show nearby schools, hospitals, malls around any property
+📊 <b>Smart Filtering</b> - I learn what matters most to you and prioritize accordingly
 
-**Quick Start:**
+<b>Quick Start:</b>
 • "2BHK under 100 lakhs in Kadri"
 • "Properties with swimming pool and gym"
 • "Show me family-friendly properties"
@@ -359,9 +359,9 @@ What kind of property are you looking for? 😊`,
         const nearbyMessage = {
           id: Date.now(),
           type: 'bot',
-          content: `🗺️ Found ${limitedPlaces.length} ${placeType}s near **${propertyName}**:\n\n${
+          content: `🗺️ Found ${limitedPlaces.length} ${placeType}s near <b>${propertyName}</b>:\n\n${
             limitedPlaces.map((place, index) => 
-              `${index + 1}. **${place.name}**\n   📍 ${place.vicinity}\n   ${place.rating ? `⭐ ${place.rating}` : ''}\n`
+              `${index + 1}. <b>${place.name}</b>\n   📍 ${place.vicinity}\n   ${place.rating ? `⭐ ${place.rating}` : ''}\n`
             ).join('\n')
           }\n💡 Need more details? Just ask me!`,
           timestamp: new Date().toLocaleTimeString(),
@@ -431,7 +431,7 @@ What kind of property are you looking for? 😊`,
       const appointmentMessage = {
         id: Date.now(),
         type: 'bot',
-        content: `📅 **Appointment Scheduled Successfully!**\n\n**Details:**\n• FullName: ${calendarForm.fullName}\n• Date: ${calendarForm.date}\n• Time: ${calendarForm.time}\n• Message: ${calendarForm.message}\n\nYou'll receive a confirmation email shortly. Thank you! 😊`,
+        content: `📅 <b>Appointment Scheduled Successfully!</b>\n\n<b>Details:</b>\n• FullName: ${calendarForm.fullName}\n• Date: ${calendarForm.date}\n• Time: ${calendarForm.time}\n• Message: ${calendarForm.message}\n\nYour appointment has confirmed. Thank you! 😊`,
         timestamp: new Date().toLocaleTimeString()
       };
 
@@ -459,11 +459,6 @@ What kind of property are you looking for? 😊`,
       message: ''
     });
     setShowCalendarForm(false);
-  };
-
-  // Function to convert **text** to bold HTML
-  const formatText = (text) => {
-    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   };
 
   const ConversationStageIndicator = () => {

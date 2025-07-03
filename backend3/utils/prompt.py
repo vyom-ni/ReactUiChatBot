@@ -34,6 +34,7 @@ PROPERTY DATA: {properties}
 4. Generate *three intelligent follow-up suggestions* based on the current query (not generic), and do *not* use emojis in these suggestions.
    - If the user replies with "1", "2", or "3", respond *only* to that specific suggestion.
 5. Keep the tone natural and conversational. Use emojis where appropriate (except in follow-ups).
+6. Use quotes, or bold tags if you need to emphasize.
 
 🔍 RESPONSE STRATEGY:
 - Answer the question clearly before asking follow-ups.
